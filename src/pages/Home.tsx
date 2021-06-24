@@ -1,19 +1,22 @@
 import { useHistory } from 'react-router-dom'
+import { FormEvent, useState } from 'react';
 
 import Button from '../components/Button';
 
 import illustrationImg from '../assets/images/illustration.svg';
 import logoImg from '../assets/images/logo.svg';
 import googleIconImg from '../assets/images/google-icon.svg';
+import { useAuth } from '../hooks/useAuth';
+import { database } from '../services/firebase';
 
 //CSS
 import '../styles/auth.scss';
-import { useAuth } from '../hooks/useAuth';
 
 function Home() {
 
     const history = useHistory();
-    const { user, signInWithGoogle } = useAuth()
+    const { user, signInWithGoogle } = useAuth();
+    const [roomCode, setRoomCode] = useState("");
 
     async function handleCreateRoom() {
         if (!user) {
@@ -21,6 +24,23 @@ function Home() {
         }
 
         history.push('/rooms/new');
+    }
+
+    async function handleJoinRoom(event: FormEvent) {
+        event.preventDefault();
+
+        if (roomCode.trim() === '') {
+            return;
+        }
+
+        const roomRef = await database.ref(`rooms/${roomCode}`).get();
+
+        if (!roomRef.exists()) {
+            alert('This room does not exist.');
+            return;
+        }
+
+        history.push(`/rooms/${roomCode}`);
     }
 
     return (
@@ -34,17 +54,17 @@ function Home() {
                 <div className="main-content">
                     <img src={logoImg} alt="Logo Letmeask" />
                     <button onClick={handleCreateRoom} className="create-room">
-                        <img src={googleIconImg} alt="" />
+                        <img src={googleIconImg} alt="Google Logo" />
                         Crie sua sala com o Google
                     </button>
                     <div className="separetor">ou entre em uma sala</div>
 
                     {/* Formulário de autenticação */}
-                    <form>
+                    <form onSubmit={handleJoinRoom} >
                         <input type="text"
-                            name=""
-                            id=""
                             placeholder="Digite o código da sala"
+                            onChange={event => setRoomCode(event.target.value)}
+                            value={roomCode}
                         />
                         <Button type="submit">
                             Entrar na sala
